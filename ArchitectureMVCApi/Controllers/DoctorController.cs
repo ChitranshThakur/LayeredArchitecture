@@ -1,16 +1,17 @@
 ﻿using DomainLayer.Models;
 using Microsoft.AspNetCore.Mvc;
 using ServicesLayer.CustomRepository;
+using ServicesLayer.Repository.IRepository;
 
 namespace ArchitectureMVCApi.Controllers
 {
     public class DoctorController : Controller
     {
-        private readonly IDoctorRepository _dc;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public DoctorController(IDoctorRepository dc)
+        public DoctorController(IUnitOfWork unitOfWork)
         {
-            _dc = dc;
+            _unitOfWork = unitOfWork;
         }
         public IActionResult Index()
         {
@@ -20,7 +21,18 @@ namespace ArchitectureMVCApi.Controllers
         [HttpGet("get")]
         public IEnumerable<Doctor> GetAllDoctors()
         {
-            return _dc.GetAll();
+            return _unitOfWork.DoctorRepository.GetAll();
+        }
+
+        [HttpGet("getone")]
+        public ActionResult GetDoctorById(int id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+            var doctorFromDb = _unitOfWork.DoctorRepository.GetFirstOrDefault(x => x.ID == id);
+            return Ok(doctorFromDb);
         }
 
         [HttpPost("create")]
@@ -28,8 +40,8 @@ namespace ArchitectureMVCApi.Controllers
         {
             if (ModelState.IsValid)
             {
-                _dc.Add(doctor);
-                _dc.Save();
+                _unitOfWork.DoctorRepository.Add(doctor);
+                _unitOfWork.DoctorRepository.Save();
                 return Json(new { success = true, message = "Created Successfully" });
             }
             return Json(new { success = false, message = "Failed" });
@@ -42,8 +54,8 @@ namespace ArchitectureMVCApi.Controllers
             {
                 return NotFound();
             }
-            _dc.Update(doctor);
-            _dc.Save();
+            _unitOfWork.DoctorRepository.Update(doctor);
+            _unitOfWork.DoctorRepository.Save();
             return Json(new { success = true, message = "Updated successfully" });
         }
 
@@ -54,8 +66,8 @@ namespace ArchitectureMVCApi.Controllers
             { 
                return BadRequest();
             }
-            var doctorDb = _dc.GetFirstOrDefault(x => x.ID == id);
-            _dc.Remove(doctorDb);
+            var doctorDb = _unitOfWork.DoctorRepository.GetFirstOrDefault(x => x.ID == id);
+            _unitOfWork.DoctorRepository.Remove(doctorDb);
             return Json(new { success = true, message = "Deleted successfully" });
         }
 
